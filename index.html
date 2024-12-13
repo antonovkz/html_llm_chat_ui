@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat API</title>
+    <link rel="stylesheet" href="styles.css">
+    <link id="theme-link" rel="stylesheet" href="default.min.css">
+    <script src="highlight.min.js"></script>
+    <script src="marked.min.js"></script>
+</head>
+<body>
+    <div id="sidebar">
+        <ul id="chat-list"></ul>
+        <button class="new-chat" id="new-chat-button">New Chat</button>
+    </div>
+    <div id="main-content">
+        <div id="chat-wrapper">
+            <div id="chat-container"></div>
+            <div id="input-container">
+                <textarea id="user-input" placeholder="Type your message here..." rows="3"></textarea>
+                <button id="send-button">Send</button>
+            </div>
+        </div>
+    </div>
+    <div id="settings">
+        <div class="settings-buttons-container">
+            <button id="toggle-theme-button">Toggle Theme</button>
+            <button id="reset-settings-button" class="reset-settings-button">Reset to Default</button>
+        </div>
+        <div id="presets">
+            <div class="presets-buttons-container">
+                <select id="preset-list">
+                    <option value="No Preset">No Preset</option>
+                    <option value="update-create">Update/Create new preset...</option>
+                </select>
+            </div>
+            <div id="preset-form" style="display: none;">
+                <div>
+                    <input type="text" id="preset-name-input" placeholder="Preset name..." class="preset-input">
+                </div>
+                <div class="presets-buttons-container">
+                    <button id="confirm-preset-button">Save</button>
+                    <button id="cancel-preset-button">Cancel</button>
+                </div>
+            </div>
+        </div>
+        <div class="settings-system-input-container">
+            <textarea id="system-input" placeholder="System prompt..." rows="3" class="settings-input-system"></textarea>
+        </div>
+        <ul id="settings-list">
+            <li>
+                <label for="apiBase-input" class="tooltip">API Base:</label>
+                <input type="text" id="apiBase-input" value="http://127.0.0.1:7001/v1" class="settings-input settings-input-model">
+            </li>
+            <li>
+                <label for="apiKey-input" class="tooltip">API Key:</label>
+                <input type="password" id="apiKey-input" class="settings-input settings-input-model">
+            </li>
+            <li>
+                <label for="model-input" class="tooltip">Model:</label>
+                <input type="text" id="model-input" value="gpt-3.5-turbo" class="settings-input settings-input-model">
+                <div id="model-dropdown" class="dropdown"></div>
+            </li>
+            <li>
+                <input type="checkbox" id="maxTokens-checkbox" class="settings-checkbox">
+                <label for="maxTokens-input" class="tooltip">Max Tokens:
+                    <span class="tooltiptext">The maximum number of tokens to generate in the completion.</span>
+                </label>
+                <input type="number" id="maxTokens-input" value="8192" class="settings-input settings-input-parameter" disabled>
+            </li>
+            <li>
+                <input type="checkbox" id="temperature-checkbox" class="settings-checkbox">
+                <label for="temperature-input" class="tooltip">Temperature:
+                    <span class="tooltiptext">Controls the randomness of predictions by scaling the logits before applying softmax.</span>
+                </label>
+                <input type="number" step="0.01" id="temperature-input" value="0.7" class="settings-input settings-input-parameter" disabled>
+            </li>
+            <li>
+                <input type="checkbox" id="topP-checkbox" class="settings-checkbox">
+                <label for="topP-input" class="tooltip">Top P:
+                    <span class="tooltiptext">Controls the randomness of predictions by using nucleus sampling.</span>
+                </label>
+                <input type="number" step="0.01" id="topP-input" value="0.8" class="settings-input settings-input-parameter" disabled>
+            </li>
+            <li>
+                <input type="checkbox" id="topK-checkbox" class="settings-checkbox">
+                <label for="topK-input" class="tooltip">Top K:
+                    <span class="tooltiptext">Controls the randomness of predictions by limiting the number of most likely next tokens.</span>
+                </label>
+                <input type="number" id="topK-input" value="20" class="settings-input settings-input-parameter" disabled>
+            </li>
+            <li>
+                <input type="checkbox" id="minP-checkbox" class="settings-checkbox">
+                <label for="minP-input" class="tooltip">Min P:
+                    <span class="tooltiptext">Controls the minimum probability threshold for token selection.</span>
+                </label>
+                <input type="number" step="0.01" id="minP-input" value="0" class="settings-input settings-input-parameter" disabled>
+            </li>
+            <li>
+                <input type="checkbox" id="repetitionPenalty-checkbox" class="settings-checkbox">
+                <label for="repetitionPenalty-input" class="tooltip">Repetition Penalty:
+                    <span class="tooltiptext">Penalizes repeated tokens according to their frequency.</span>
+                </label>
+                <input type="number" step="0.01" id="repetitionPenalty-input" value="1" class="settings-input settings-input-parameter" disabled>
+            </li>
+            <li>
+                <input type="checkbox" id="presencePenalty-checkbox" class="settings-checkbox">
+                <label for="presencePenalty-input" class="tooltip">Presence Penalty:
+                    <span class="tooltiptext">Penalizes new tokens based on whether they appear in the text so far.</span>
+                </label>
+                <input type="number" step="0.01" id="presencePenalty-input" value="0" class="settings-input settings-input-parameter" disabled>
+            </li>
+            <li>
+                <input type="checkbox" id="repetitionPenaltyRange-checkbox" class="settings-checkbox">
+                <label for="repetitionPenaltyRange-input" class="tooltip">Repetition Penalty Range:
+                    <span class="tooltiptext">The range over which to apply the repetition penalty.</span>
+                </label>
+                <input type="number" id="repetitionPenaltyRange-input" value="1024" class="settings-input settings-input-parameter" disabled>
+            </li>
+            <li>
+                <input type="checkbox" id="typicalP-checkbox" class="settings-checkbox">
+                <label for="typicalP-input" class="tooltip">Typical P:
+                    <span class="tooltiptext">Controls the randomness of predictions by using typical sampling.</span>
+                </label>
+                <input type="number" step="0.01" id="typicalP-input" value="1" class="settings-input settings-input-parameter" disabled>
+            </li>
+            <li>
+                <input type="checkbox" id="tfs-checkbox" class="settings-checkbox">
+                <label for="tfs-input" class="tooltip">TFS:
+                    <span class="tooltiptext">Controls the randomness of predictions by using tail free sampling.</span>
+                </label>
+                <input type="number" step="0.01" id="tfs-input" value="1" class="settings-input settings-input-parameter" disabled>
+            </li>
+            <li>
+                <input type="checkbox" id="topA-checkbox" class="settings-checkbox">
+                <label for="topA-input" class="tooltip">Top A:
+                    <span class="tooltiptext">Controls the randomness of predictions by using top-a sampling.</span>
+                </label>
+                <input type="number" step="0.01" id="topA-input" value="0" class="settings-input settings-input-parameter" disabled>
+            </li>
+            <li>
+                <input type="checkbox" id="guidanceScale-checkbox" class="settings-checkbox">
+                <label for="guidanceScale-input" class="tooltip">Guidance Scale:
+                    <span class="tooltiptext">Controls the influence of the guidance model on the generated text.</span>
+                </label>
+                <input type="number" step="0.01" id="guidanceScale-input" value="1" class="settings-input settings-input-parameter" disabled>
+            </li>
+            <li>
+                <input type="checkbox" id="penaltyAlpha-checkbox" class="settings-checkbox">
+                <label for="penaltyAlpha-input" class="tooltip">Penalty Alpha:
+                    <span class="tooltiptext">Controls the alpha parameter for penalty calculations.</span>
+                </label>
+                <input type="number" step="0.01" id="penaltyAlpha-input" value="0" class="settings-input settings-input-parameter" disabled>
+            </li>
+            <li>
+                <input type="checkbox" id="mirostatTau-checkbox" class="settings-checkbox">
+                <label for="mirostatTau-input" class="tooltip">Mirostat Tau:
+                    <span class="tooltiptext">Controls the target perplexity for Mirostat sampling.</span>
+                </label>
+                <input type="number" step="0.01" id="mirostatTau-input" value="5" class="settings-input settings-input-parameter" disabled>
+            </li>
+            <li>
+                <input type="checkbox" id="mirostatEta-checkbox" class="settings-checkbox">
+                <label for="mirostatEta-input" class="tooltip">Mirostat Eta:
+                    <span class="tooltiptext">Controls the learning rate for Mirostat sampling.</span>
+                </label>
+                <input type="number" step="0.01" id="mirostatEta-input" value="0.1" class="settings-input settings-input-parameter" disabled>
+            </li>
+            <li>
+                <input type="checkbox" id="encoderRepetitionPenalty-checkbox" class="settings-checkbox">
+                <label for="encoderRepetitionPenalty-input" class="tooltip">Encoder Repetition Penalty:
+                    <span class="tooltiptext">Penalizes repeated tokens in the encoder output.</span>
+                </label>
+                <input type="number" step="0.01" id="encoderRepetitionPenalty-input" value="1" class="settings-input settings-input-parameter" disabled>
+            </li>
+        </ul>
+
+        <div class="settings-buttons-container">
+            <button id="export-settings-button">Export Settings</button>
+            <button id="import-settings-button">Import Settings</button>
+            <input type="file" id="import-file-input" style="display: none;" accept=".json">
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
