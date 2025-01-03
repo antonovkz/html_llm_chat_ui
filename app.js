@@ -128,7 +128,6 @@ function loadSelectedPreset() {
     saveSettings();
 }
 
-
 function initializePresetForm() {
     const presets = JSON.parse(localStorage.getItem('presets')) || {};
     const chats = JSON.parse(localStorage.getItem('chats')) || {};
@@ -198,7 +197,6 @@ function savePreset() {
     console.log('Preset saved:', presetName, settings);
 }
 
-
 function updatePresets() {
     loadPresets();
     const chats = JSON.parse(localStorage.getItem('chats')) || {};
@@ -211,7 +209,6 @@ function updatePresets() {
         presetList.value = 'no-preset';
     }
 }
-
 
 function cancelPresetForm() {
     presetList.style.display = 'block';
@@ -250,7 +247,6 @@ function loadPresets() {
         presetList.value = 'no-preset';
     }
 }
-
 
 function exportSettings() {
     const chats = JSON.parse(localStorage.getItem('chats')) || {};
@@ -326,9 +322,8 @@ function fetchModels() {
     })
         .then(response => response.json())
         .then(data => {
-            
             const models = data.data.map(model => model.id);
-            console.log(models)
+            console.log(models);
             models.forEach(modelId => {
                 const item = document.createElement('div');
                 item.classList.add('dropdown-item');
@@ -341,7 +336,7 @@ function fetchModels() {
                     dropdown.style.display = 'none';
                     saveSettings();
                 });
-                console.log(dropdown)
+                console.log(dropdown);
                 dropdown.appendChild(item);
             });
         })
@@ -350,18 +345,18 @@ function fetchModels() {
         });
 }
 
-function sendMessage() {
+async function sendMessage() {
     const message = userInput.value.trim();
     if (message === '') return;
 
-    appendMessage('user', message);
+    await appendMessage('user', message);
     userInput.value = '';
     sendButton.disabled = true;
 
     sendRequest(chatMessages);
 }
 
-function regenerateMessage(messageElement) {
+async function regenerateMessage(messageElement) {
     const messageId = messageElement.dataset.messageId;
     if (!messageId) return;
 
@@ -388,8 +383,7 @@ function regenerateMessage(messageElement) {
     sendRequest(chatMessages);
 }
 
-function sendRequest(messages) {
-
+async function sendRequest(messages) {
     const payload = {
         model: model,
         messages: messages.map(message => {
@@ -407,12 +401,11 @@ function sendRequest(messages) {
     const headers = {
         'Content-Type': 'application/json'
     };
-    
+
     if (apiKey) {
         headers['Authorization'] = `Bearer ${apiKey}`;
     }
-    
-    
+
     console.log('Payload for sendRequest:', payload);
 
     fetch(apiBase + "/chat/completions", {
@@ -430,47 +423,46 @@ function sendRequest(messages) {
             let currentBotMessageContent = '';
             let currentBotMessageElement = null;
 
-            function readStream() {
-                reader.read().then(({ done, value }) => {
-                    if (done) {
-                        if (currentBotMessageElement) {
-                            currentBotMessageElement.innerHTML = parseAndHighlight(currentBotMessageContent);
-                            addRegenerateButton(currentBotMessageElement);
-                            hljs.highlightAll();
-                        }
-                        sendButton.disabled = false;
-                        const assistantMessageId = Date.now() + Math.random();
-                        currentBotMessageElement.dataset.messageId = assistantMessageId;
-                        chatMessages.push({ id: assistantMessageId, role: 'assistant', content: currentBotMessageContent });
-                        saveChat();
-                        return;
+            async function readStream() {
+                const { done, value } = await reader.read();
+                if (done) {
+                    if (currentBotMessageElement) {
+                        currentBotMessageElement.innerHTML = await parseAndHighlight(currentBotMessageContent);
+                        addRegenerateButton(currentBotMessageElement);
+                        hljs.highlightAll();
                     }
-                    partialData += decoder.decode(value, { stream: true });
-                    const chunks = partialData.split('data: ');
-                    partialData = chunks.pop();
-                    chunks.forEach(chunk => {
-                        if (chunk === '' || chunk === '[DONE]') return;
-                        try {
-                            const data = JSON.parse(chunk);
-                            if (!currentBotMessageElement) {
-                                currentBotMessageElement = createMessageElement('assistant');
-                                chatContainer.appendChild(currentBotMessageElement);
-                            }
-                            const newContent = data.choices[0].delta.content || '';
-                            currentBotMessageContent += newContent;
-                            currentBotMessageElement.innerHTML = parseAndHighlight(currentBotMessageContent);
-                            scrollChatToBottom();
-                        } catch (e) {
-                            console.error('Error parsing chunk:', chunk, e);
-                        }
-                    });
-                    readStream();
-                }).catch(error => {
-                    console.error('Error reading stream:', error);
                     sendButton.disabled = false;
-                });
+                    const assistantMessageId = Date.now() + Math.random();
+                    currentBotMessageElement.dataset.messageId = assistantMessageId;
+                    chatMessages.push({ id: assistantMessageId, role: 'assistant', content: currentBotMessageContent });
+                    saveChat();
+                    return;
+                }
+                partialData += decoder.decode(value, { stream: true });
+                const chunks = partialData.split('data: ');
+                partialData = chunks.pop();
+                for (const chunk of chunks) {
+                    if (chunk === '' || chunk === '[DONE]') continue;
+                    try {
+                        const data = JSON.parse(chunk);
+                        if (!currentBotMessageElement) {
+                            currentBotMessageElement = createMessageElement('assistant');
+                            chatContainer.appendChild(currentBotMessageElement);
+                        }
+                        const newContent = data.choices[0].delta.content || '';
+                        currentBotMessageContent += newContent;
+                        currentBotMessageElement.innerHTML = await parseAndHighlight(currentBotMessageContent);
+                        scrollChatToBottom();
+                    } catch (e) {
+                        console.error('Error parsing chunk:', chunk, e);
+                    }
+                }
+                readStream();
             }
-            readStream();
+            readStream().catch(error => {
+                console.error('Error reading stream:', error);
+                sendButton.disabled = false;
+            });
         })
         .catch(error => {
             console.error('Error sending message:', error);
@@ -497,9 +489,28 @@ function addSettingsToPayload(payload) {
     if (document.getElementById('encoderRepetitionPenalty-checkbox').checked) payload.encoder_repetition_penalty = encoderRepetitionPenalty;
 }
 
-function appendMessage(sender, content) {
+async function parseAndHighlight(content) {
+    const hiddenContainer = document.getElementById('hidden-render-container');
+    hiddenContainer.innerHTML = '';
+    //const parsedContent = marked.parse(content);
+    hiddenContainer.innerHTML = content;
+    if (MathJax && MathJax.typesetPromise) {
+        await MathJax.typesetPromise([hiddenContainer]);
+    } else {
+        console.warn('MathJax is not loaded or typesetPromise is not available');
+    }
+    hiddenContainer.innerHTML = marked.parse(hiddenContainer.innerHTML);
+    hiddenContainer.querySelectorAll('code').forEach(codeBlock => {
+        hljs.highlightBlock(codeBlock);
+    });
+    const resultHTML = hiddenContainer.innerHTML;
+    hiddenContainer.innerHTML = '';
+    return resultHTML;
+}
+
+async function appendMessage(sender, content) {
     const messageElement = createMessageElement(sender);
-    messageElement.innerHTML = parseAndHighlight(content);
+    messageElement.innerHTML = await parseAndHighlight(content);
 
     const messageId = Date.now() + Math.random();
     messageElement.dataset.messageId = messageId;
@@ -514,6 +525,11 @@ function appendMessage(sender, content) {
     scrollChatToBottom();
     hljs.highlightAll();
     saveChat();
+    if (MathJax && MathJax.typesetPromise) {
+        await MathJax.typesetPromise([messageElement]);
+    } else {
+        console.warn('MathJax is not loaded or typesetPromise is not available');
+    }
 }
 
 function createMessageElement(role) {
@@ -542,7 +558,7 @@ function addEditButton(messageElement) {
     messageElement.appendChild(editButton);
 }
 
-function editMessage(messageElement) {
+async function editMessage(messageElement) {
     const messageId = messageElement.dataset.messageId;
     if (!messageId) return;
 
@@ -562,18 +578,18 @@ function editMessage(messageElement) {
     const cancelButton = document.createElement('button');
     cancelButton.textContent = 'Cancel';
     cancelButton.classList.add('cancel');
-    cancelButton.addEventListener('click', () => {
-        restoreMessageElement(messageElement, originalContent, addEditButton);
+    cancelButton.addEventListener('click', async () => {
+        await restoreMessageElement(messageElement, originalContent, addEditButton);
     });
 
     const sendButton = document.createElement('button');
     sendButton.textContent = 'Send';
-    sendButton.addEventListener('click', () => {
+    sendButton.addEventListener('click', async () => {
         const newContent = textarea.value.trim();
         if (newContent === '') return;
 
         chatMessages[messageIndex].content = newContent;
-        restoreMessageElement(messageElement, newContent, addEditButton);
+        await restoreMessageElement(messageElement, newContent, addEditButton);
 
         while (chatContainer.lastChild !== messageElement) {
             chatContainer.removeChild(chatContainer.lastChild);
@@ -602,9 +618,9 @@ function editMessage(messageElement) {
     textarea.focus();
 }
 
-function restoreMessageElement(messageElement, content, addButton) {
+async function restoreMessageElement(messageElement, content, addButton) {
     messageElement.textContent = '';
-    messageElement.innerHTML = parseAndHighlight(content);
+    messageElement.innerHTML = await parseAndHighlight(content);
     addButton(messageElement);
     hljs.highlightAll();
 }
@@ -650,8 +666,7 @@ function createNewChat() {
     presetList.value = 'no-preset';
 }
 
-
-function loadChat(chatId) {
+async function loadChat(chatId) {
     currentChatId = chatId;
     localStorage.setItem('currentChatId', chatId);
     const chats = JSON.parse(localStorage.getItem('chats')) || {};
@@ -666,10 +681,9 @@ function loadChat(chatId) {
     loadSettings(settings);
     initializePresetForm();
 
-
     chatContainer.innerHTML = '';
 
-    chatMessages.forEach(message => {
+    for (const message of chatMessages) {
         if (!message.id) {
             message.id = Date.now() + Math.random();
         }
@@ -677,7 +691,7 @@ function loadChat(chatId) {
             systemInput.value = systemPrompt = message.content;
         } else {
             const messageElement = createMessageElement(message.role);
-            messageElement.innerHTML = parseAndHighlight(message.content);
+            messageElement.innerHTML = await parseAndHighlight(message.content);
 
             messageElement.dataset.messageId = message.id;
 
@@ -688,7 +702,7 @@ function loadChat(chatId) {
                 addEditButton(messageElement);
             }
         }
-    });
+    }
 
     const currentPresetName = settings.presetName || 'no-preset';
     presetList.value = currentPresetName;
@@ -699,7 +713,6 @@ function loadChat(chatId) {
     updatePresets();
     console.log('Chat loaded:', chatMessages);
 }
-
 
 function saveChat() {
     const chats = JSON.parse(localStorage.getItem('chats')) || {};
@@ -724,16 +737,6 @@ function deleteChat(chatId) {
     } else {
         loadChats();
     }
-}
-
-function parseAndHighlight(content) {
-    const parsedContent = marked.parse(content);
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = parsedContent;
-    tempDiv.querySelectorAll('code').forEach(codeBlock => {
-        hljs.highlightBlock(codeBlock);
-    });
-    return tempDiv.innerHTML;
 }
 
 function getDefaultSettings() {
@@ -904,7 +907,6 @@ function resetSettings() {
     updateSystemPromptInChat();
     console.log('Settings reset to default:', defaultSettings);
 }
-
 
 function updateSystemPromptInChat() {
     const systemMessageIndex = chatMessages.findIndex(msg => msg.role === 'system');

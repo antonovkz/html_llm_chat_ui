@@ -319,6 +319,7 @@ code {
     white-space: pre-wrap;
     overflow-x: auto;
     margin: 5px;
+    max-width: 90%;
 }
 
 body.dark code {

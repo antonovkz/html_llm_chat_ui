@@ -8,6 +8,28 @@
     <link id="theme-link" rel="stylesheet" href="default.min.css">
     <script src="highlight.min.js"></script>
     <script src="marked.min.js"></script>
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            },
+            svg: {
+                fontCache: 'global'
+            },
+            chtml: {
+                fontURL: 'fonts'
+            },
+        };
+    </script>
+    <script src="polyfill.min.js?"></script>
+    <script id="MathJax-script" src="tex-mml-chtml.js"></script>
 </head>
 <body>
     <div id="sidebar">
@@ -182,6 +204,7 @@
             <input type="file" id="import-file-input" style="display: none;" accept=".json">
         </div>
     </div>
+    <div id="hidden-render-container" style="display: none;"></div>
     <script src="app.js"></script>
 </body>
 </html>
